@@ -1,6 +1,18 @@
-
-```
-EWO - Emerge (-e) World Optimizer (v0.4)
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>EWO - Emerge (-e) World Optimizer</title>
+</head>
+<body>
+<h1>Project Information</h1>
+<p><em>Ewo</em> is a tool written in Python for the <a href="http://www.gentoo.org">Gentoo GNU/Linux</a> distribution to optimize the recompilation of the whole system, all installed packages.</p>
+<p>Usually one can simply use <code>emerge -e world</code> and <code>emerge --resume</code> when something bad happens, but sometimes you need to run another emerge process to solve a problem and this alter the desired <code>emerge --resume</code> behavior. <em>Ewo</em> solves this issue and it can be used in general to compile all the packages that have not been updated or replaced after a specific date (CFLAGS, LDFLAGS change, compiler upgrade and so on).
+Using a config file named <code>package.skip</code> the user can avoid useless packages reinstallation, like large binary packages for example.</p>
+<p>Runtime dependencies: <strong>app-portage/genlop</strong></p>
+<p>Take a look at <code>ewo --help</code> before use it or read</p>
+<h1>BasicHelp</h1>
+<pre>
+EWO - Emerge (-e) World Optimizer (v0.5)
 
 Usage: ewo [options]
 
@@ -28,4 +40,6 @@ Options:
                         pretend' (Default) the output of 'emerge -1vp [...] |
                         less' will be shown.The 'cleaner' mode removes files
                         related with the already-done ebuilds.
-```
+</pre>
+</body>
+</html>
