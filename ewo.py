@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+#!/usr/bin/env python
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -15,6 +15,7 @@
 #
 # Emerge (-e) World Optimizer (EWO)
 # EWO 0.4 Copyright (C) 2007-2010 Laurento Frittella <laurento.frittella@gmail.com>
+# EWO 0.5 Copyright (C) 2016 Alexander Golikov <alex@ws54.tk>
 
 import re, commands, os, sys
 import portage
@@ -25,12 +26,12 @@ from portage.dep import isvalidatom, dep_getcpv
 from time import gmtime, strftime
 from subprocess import call, Popen, PIPE
 
-conf_dir = os.path.expanduser('~/.ewo/')
+conf_dir = os.path.expanduser('~/.config/ewo/')
 conf_fromdate = conf_dir + '.ewo_from_date'
 conf_toskip = conf_dir + 'package.skip'
 conf_smartworld = conf_dir + '.smartworld'
 
-ewo_version = "0.4"
+ewo_version = "0.5"
 from_date = ''
 world = []
 alreadydone = []
@@ -73,10 +74,10 @@ def get_latest_sync_date():
 		return raw_genlop_pattern.match(raw_latest_sync).group(1)
 	else:
 		raise EwoError('Oops! Error getting latest portage-sync date...')
-		
+
 def read_smartworld():
 	global world, options
-	
+
 	latestsync_date = get_latest_sync_date()
 	smartworld_filename = '.smartworld_S%s_R%s_P%s' % (from_date.replace(' ','').replace(':',''),
 							   latestsync_date.replace(' ','').replace(':',''),
@@ -93,13 +94,13 @@ def read_smartworld():
 	else:
 		print "   (no useful 'smartworld' cache has been found)"
 		return False
-	
+
 def write_smartworld():
 	global options
-	
+
 	# clean old and useless smartworld files (if any)
 	commands.getstatusoutput('rm -f %s/.smartworld*' % conf_dir)
-	
+
 	latestsync_date = get_latest_sync_date()
 	smartworld_filename = '.smartworld_S%s_R%s_P%s' % (from_date.replace(' ','').replace(':',''),
 							   latestsync_date.replace(' ','').replace(':',''),
@@ -110,37 +111,37 @@ def write_smartworld():
 
 def fill_world_ng():
 	global world, options
-	
-	print "Checking ALL installed packages..."	
+
+	print "Checking ALL installed packages..."
 	if not read_smartworld():
 		# SmartWorld file doesn't exist or not valid, let's calculate world and create one
 		if options.problematic_only:
 			raw_emerge_pattern = re.compile('(?:\[ebuild.I.....\]|\[ebuild....F..\])\s+([^\s]+).*')
 		else:
 			raw_emerge_pattern = re.compile('\[ebuild.+\]\s+([^\s]+).*')
-		
+
 		if vercmp(portage.VERSION, "2.2") < 0:
 			# Portage < 2.2
 			raw_pkglist = commands.getstatusoutput('emerge -ep --quiet --nospinner world system')
 		else:
 			# Portage >= 2.2
 			raw_pkglist = commands.getstatusoutput('emerge -ep --quiet --nospinner @world @system')
-			
+
 		if raw_pkglist[0] == 0:
 			pkglist = raw_pkglist[1].split('\n')
-	
+
 			for pkg in pkglist:
 				match = raw_emerge_pattern.match(pkg)
 				if match:
 					world.append(match.group(1))
 		else:
 			raise EwoError('Oops! No world packages list...')
-		
+
 		write_smartworld()
 
 def fill_alreadydone():
 	print "Checking Already-Done (re-compiled) packages..."
-	
+
 	global alreadydone, from_date
 	raw_genlop_pattern = re.compile('.+>>>\s+([^\s]+).*')
 
@@ -223,7 +224,7 @@ if options.touch_fromdate:
 		choosen_date = options.touch_fromdate
 	else:
 		raise EwoError("'%s' isn't a valid genlop-style date!" % options.touch_fromdate)
-	
+
 	fd = open(conf_fromdate, 'w')
 	fd.write(choosen_date)
 	fd.close()
@@ -246,10 +247,10 @@ elif options.show_fromdate:
 try:
 	read_config_files()
 	print "Using '%s' as starting date\n" % from_date
-	
+
 	fill_world_ng()
 	fill_alreadydone()
-	
+
 	for pkg in world:
 		if alreadydone.count(pkg) == 0 and toskip.count(pkg) == 0:
 			todo.append(pkg)
@@ -259,7 +260,7 @@ try:
 			out += '=' + pkg + ' '
 	# We need to remove the last whitespace (emerge doesn't like it)
 	out = out.rstrip()
-	
+
 	print "\n'-e world' packages   : %d" % len(world)
 	print "Already done packages : %d" % len(alreadydone)
 	print "TODO packages         : %d" % len(out.split())
@@ -290,28 +291,28 @@ try:
 		p2 = Popen(["less", "-R"], stdin=p1.stdout)
 		p2.wait()
 		#p1.wait() # This blocks EWO if the user quit "less" before reach the end of the emerge output
-		
+
 		if p1.returncode > 0:
 			print "\n\nOne or more errors occurred, please make your checks and restart EWO"
 		else:
 			print "\n\nIf all seems ok, start EWO with '--mode=exec' to automatically start a convenient emerge"
 
 	elif options.mode == "cleaner":
-	    # In this mode EWO simply removes useless files in distfiles directory 
+	    # In this mode EWO simply removes useless files in distfiles directory
 	    # and leaves only those related with the ebuild we still need to build
 	    useful_files = set()
 	    freed_space = 0
 	    distdir = commands.getstatusoutput('portageq distdir')[1]
 	    raw_emerge_pattern = re.compile('((file|http|ftp|https)://\S+)\s.*$')
-	    
-	    raw_pkglist = commands.getstatusoutput('emerge -fp --quiet --nospinner ' + out)	    
+
+	    raw_pkglist = commands.getstatusoutput('emerge -fp --quiet --nospinner ' + out)
 	    if raw_pkglist[0] == 0:
 	    	pkglist = raw_pkglist[1].split('\n')
 	    	for pkg in pkglist:
 	    		match = raw_emerge_pattern.match(pkg)
 	    		if match:
 	    			useful_files.add(os.path.basename(match.group(1)))
-	
+
 	    for root, dirs, files in os.walk(distdir):
 	    	for name in files:
 	    		if name not in useful_files:
@@ -320,11 +321,11 @@ try:
 
 	    print "\n\n*** Freed Space: %s" % human_readable(freed_space)
 	    print "Now we only have the files we need to complete our mission ;)"
-	   	
+
 	else:
 		print "\nHere is the todo package list:\n(start EWO with '--mode=exec' to automatically start a convenient emerge)\n"
 		print out
-	
+
 except EwoError, e:
 	print e
 except:
